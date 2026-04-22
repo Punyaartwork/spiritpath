@@ -11,6 +11,9 @@ import UserNotifications
 
 @main
 struct SpiritPathApp: App {
+    @State private var screen: Screen = .home
+    @State private var onboardingComplete = false
+
     init() {
         SpiritFonts.registerAll()
         Analytics.initialize()
@@ -18,7 +21,18 @@ struct SpiritPathApp: App {
 
     var body: some Scene {
         WindowGroup {
-            OnboardingView()
+            ZStack {
+                if !onboardingComplete {
+                    OnboardingView(onComplete: {
+                        onboardingComplete = true
+                        screen = .home
+                    })
+                } else {
+                    RootTabView(screen: $screen)
+                }
+            }
+            .animation(.easeInOut(duration: 0.5), value: screen)
+            .animation(.easeInOut(duration: 0.5), value: onboardingComplete)
         }
     }
 }
@@ -182,13 +196,13 @@ private extension OnboardingState {
 }
 
 private struct OnboardingView: View {
+    let onComplete: () -> Void
     @State private var screen = 1
     @State private var previousScreen = 1
     @State private var state = OnboardingState()
     @State private var selectedPaywallPlan = "Yearly"
     @State private var settlingStep = 0
     @State private var soundOn = false
-    @State private var didCompleteAuth = false
     @State private var didApplyDebugStart = false
     @State private var notificationsGranted = false
     @State private var outgoingGroup2Screen: Int?
@@ -198,10 +212,7 @@ private struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            if didCompleteAuth {
-                HomePlaceholder()
-                    .transition(.opacity)
-            } else if screen == 1 {
+            if screen == 1 {
                 MotionLogoScreen {
                     go(to: 2)
                 }
@@ -294,9 +305,7 @@ private struct OnboardingView: View {
         case 16:
             AuthScreen {
                 fireOnboardingCompleted()
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    didCompleteAuth = true
-                }
+                onComplete()
             }
         default:
             EmptyView()
@@ -1097,21 +1106,6 @@ private struct AuthScreen: View {
     }
 }
 
-private struct HomePlaceholder: View {
-    var body: some View {
-        ZStack {
-            Color.white.ignoresSafeArea()
-            VStack(spacing: 12) {
-                Text("Your path is ready.")
-                    .font(.system(size: 30, weight: .bold))
-                Text("Begin with one intentional step.")
-                    .font(.system(size: 16))
-                    .foregroundStyle(Color.spiritSecondary)
-            }
-            .multilineTextAlignment(.center)
-        }
-    }
-}
 
 private struct Group2Screen<Content: View>: View {
     let progressIndex: Int
