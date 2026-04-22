@@ -5,15 +5,58 @@
 
 import Combine
 import CoreLocation
+import CoreText
 import SwiftUI
 import UserNotifications
 
 @main
 struct SpiritPathApp: App {
+    init() {
+        SpiritFonts.registerAll()
+    }
+
     var body: some Scene {
         WindowGroup {
             OnboardingView()
         }
+    }
+}
+
+// Runtime font registration · avoids Info.plist UIAppFonts setup
+// TTF files live in SpiritPath/Resources/Fonts/
+private enum SpiritFonts {
+    static let names: [String] = [
+        "DMSerifDisplay-Regular",
+        "DMSerifDisplay-Italic",
+        "Manrope-VariableFont_wght",
+        "JetBrainsMono-Regular",
+        "JetBrainsMono-Medium"
+    ]
+
+    static func registerAll() {
+        for name in names {
+            guard let url = Bundle.main.url(forResource: name, withExtension: "ttf") else {
+                #if DEBUG
+                print("⚠️ SpiritFonts · file missing in bundle: \(name).ttf")
+                #endif
+                continue
+            }
+            var error: Unmanaged<CFError>?
+            if !CTFontManagerRegisterFontsForURL(url as CFURL, .process, &error) {
+                #if DEBUG
+                print("⚠️ SpiritFonts · register failed for \(name): \(String(describing: error?.takeUnretainedValue()))")
+                #endif
+            }
+        }
+    }
+
+    // Font family names (usable in .font(.custom(...))) — must match PostScript names in the TTFs
+    enum Family {
+        static let serif = "DMSerifDisplay-Regular"
+        static let serifItalic = "DMSerifDisplay-Italic"
+        static let sans = "Manrope"                    // variable font · use .fontWeight modifier
+        static let mono = "JetBrainsMono-Regular"
+        static let monoMedium = "JetBrainsMono-Medium"
     }
 }
 
@@ -62,20 +105,25 @@ private struct OnboardingState {
         let nature = teachingTypes.contains("Nature connection") || focusPlaces.contains("Forest / Park") || focusPlaces.contains("Near water") || focusPlaces.contains("Open fields") || focusPlaces.contains("Mountains")
         let breathBody = teachingTypes.contains("Breathwork") || teachingTypes.contains("Body awareness")
         let storyTeaching = teachingTypes.contains("Story & wisdom") || teachingTypes.contains("Buddhist teaching") || teachingTypes.contains("Gentle guidance")
+        let mantra = teachingTypes.contains("Sound & mantra")
 
-        if experienced && breathBody {
-            return SpiritMatch(master: "Luang Por Teean", shortName: "Luang Por Teean", style: "Dynamic Awareness · Walking Insight")
-        }
+        // Canonical 7-row matrix · synced with Android · see master plan Tab 04 C3
+        // Do not diverge without cross-platform sync round.
 
-        if beginner && storyTeaching {
-            return SpiritMatch(master: "Luang Por Chah", shortName: "Luang Por Chah", style: "Simple Wisdom · Daily Life Practice")
-        }
-
-        if experienced && (nature || silence) {
-            return SpiritMatch(master: "Buddhadasa Bhikkhu", shortName: "Buddhadasa", style: "Nature Dhamma · Breath Awareness")
-        }
-
-        return SpiritMatch(master: "Luang Pu Sodh Candasaro", shortName: "Luang Pu Sodh", style: "Inner Light · Mantra Stillness")
+        // Row 1 + 4: any experience + body/breath → Mun
+        if breathBody { return .mun }
+        // Row 2: experienced + nature/silence → Chah
+        if experienced && (nature || silence) { return .chah }
+        // Row 3: experienced + story/teaching → Chah
+        if experienced && storyTeaching { return .chah }
+        // Row 5: beginner + story/teaching → Chah
+        if beginner && storyTeaching { return .chah }
+        // Row 6a: mantra → Sodh · explicit intent · added C3b round 7
+        if mantra { return .sodh }
+        // Row 6: beginner + silence/nature → Sodh
+        if beginner && (silence || nature) { return .sodh }
+        // Row 7: fallback → Sodh
+        return .sodh
     }
 }
 
@@ -89,6 +137,30 @@ private struct SpiritMatch {
     let master: String
     let shortName: String
     let style: String
+    let explanation: String
+}
+
+extension SpiritMatch {
+    static let mun = SpiritMatch(
+        master: "Luang Pu Mun Bhūridatto",
+        shortName: "Luang Pu Mun",
+        style: "Forest · Kammaṭṭhāna",
+        explanation: "His teachings turn walking itself into awareness — matching your answers from the quiz."
+    )
+
+    static let chah = SpiritMatch(
+        master: "Luang Por Chah",
+        shortName: "Luang Por Chah",
+        style: "Forest · Wat Pah Pong",
+        explanation: "His teachings meet nature with simple, direct wisdom — matching your answers from the quiz."
+    )
+
+    static let sodh = SpiritMatch(
+        master: "Luang Pu Sodh Candasaro",
+        shortName: "Luang Pu Sodh",
+        style: "Inner Light · Mantra Stillness",
+        explanation: "His teachings focus on calming the mind through inner stillness and light — matching your answers from the quiz."
+    )
 }
 
 private struct OnboardingView: View {
@@ -734,7 +806,7 @@ private struct SpiritMatchScreen: View {
                 .foregroundStyle(Color.spiritSecondary)
                 .padding(.top, 8)
 
-            Text("His teachings focus on calming the mind through\ninner stillness and light - matching your answers\nfrom the quiz.")
+            Text(match.explanation)
                 .font(.system(size: 15))
                 .lineSpacing(6)
                 .multilineTextAlignment(.center)
@@ -1374,10 +1446,32 @@ extension Color {
         self.init(.sRGB, red: red, green: green, blue: blue, opacity: 1)
     }
 
+    // Onboarding palette · stark B&W editorial (unchanged · in-use across 21 screens)
+    // Full reskin to navy/cream in a later round · preview-gated · see master plan §04
     static let spiritPrimary = Color(hex: "#111111")
     static let spiritSecondary = Color(hex: "#555555")
     static let spiritMuted = Color(hex: "#999999")
-    static let spiritGold = Color(hex: "#F5C842")
+    static let spiritGold = Color(hex: "#F0C870")      // ← updated 2026-04-21 · matches prototype moon gold
+
+    // Post-onboarding palette · warm dark devotional · from prototype tokens.jsx
+    // Used by Phase 1+ surfaces: Home, Session, Reflection, Journey, Stillness, Profile, Settings
+    // Ready-to-use tokens · wire into new SwiftUI views as they get built
+    static let spiritNavy        = Color(hex: "#0A1424")     // surface · app bg
+    static let spiritNavyLow     = Color(hex: "#111D33")     // surfaceLow · card
+    static let spiritNavyRaised  = Color(hex: "#152544")     // surfaceLowest · raised card
+    static let spiritNavyHigh    = Color(hex: "#1C2F54")     // surfaceHigh · selected
+    static let spiritMidnight    = Color(hex: "#050A14")     // warmBlack · deepest bg (Stillness)
+    static let spiritCream       = Color(hex: "#F4E8C8")     // ink · primary text on dark
+    static let spiritCreamDeep   = Color(hex: "#E0D0A8")
+    static let spiritGoldDeep    = Color(hex: "#C49A48")     // primaryDeep · accent shadow
+    static let spiritGoldTint    = Color(hex: "#F7DCA0")     // primaryTint · highlight
+    static let spiritRiver       = Color(hex: "#7FB3DD")     // secondary · river blue
+    static let spiritOnGold      = Color(hex: "#0A1424")     // text on gold pill (reverse contrast)
+
+    static let spiritInkSoft     = Color(hex: "#F4E8C8").opacity(0.82)   // body text on dark
+    static let spiritInkMuted    = Color(hex: "#F4E8C8").opacity(0.58)   // captions
+    static let spiritInkFaint    = Color(hex: "#F4E8C8").opacity(0.32)   // dormant UI
+    static let spiritInkGhost    = Color(hex: "#F4E8C8").opacity(0.12)   // hairline borders
 }
 
 extension Notification.Name {
