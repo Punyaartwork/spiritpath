@@ -13,6 +13,7 @@
 		34EE11752F172AEC00319EBD /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = 34EE11742F172AEC00319EBD /* Realtime */; };
 		34EE11772F172AEC00319EBD /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 34EE11762F172AEC00319EBD /* Storage */; };
 		34EE11792F172AEC00319EBD /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 34EE11782F172AEC00319EBD /* Supabase */; };
+		BB00000000000000AA000003 /* Mixpanel in Frameworks */ = {isa = PBXBuildFile; productRef = BB00000000000000AA000002 /* Mixpanel */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +39,7 @@
 				34EE116F2F172AEC00319EBD /* Auth in Frameworks */,
 				34EE11772F172AEC00319EBD /* Storage in Frameworks */,
 				34EE11752F172AEC00319EBD /* Realtime in Frameworks */,
+				BB00000000000000AA000003 /* Mixpanel in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -94,6 +96,7 @@
 				34EE11742F172AEC00319EBD /* Realtime */,
 				34EE11762F172AEC00319EBD /* Storage */,
 				34EE11782F172AEC00319EBD /* Supabase */,
+				BB00000000000000AA000002 /* Mixpanel */,
 			);
 			productName = SpiritPath;
 			productReference = 344801D52F0D0BB2003611C7 /* SpiritPath.app */;
@@ -125,6 +128,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				347E02D62F1728E500F1634A /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				BB00000000000000AA000001 /* XCRemoteSwiftPackageReference "mixpanel-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 344801D62F0D0BB2003611C7 /* Products */;
@@ -391,6 +395,14 @@
 				minimumVersion = 2.5.1;
 			};
 		};
+		BB00000000000000AA000001 /* XCRemoteSwiftPackageReference "mixpanel-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/mixpanel/mixpanel-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -423,6 +435,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 347E02D62F1728E500F1634A /* XCRemoteSwiftPackageReference "supabase-swift" */;
 			productName = Supabase;
+		};
+		BB00000000000000AA000002 /* Mixpanel */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BB00000000000000AA000001 /* XCRemoteSwiftPackageReference "mixpanel-swift" */;
+			productName = Mixpanel;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

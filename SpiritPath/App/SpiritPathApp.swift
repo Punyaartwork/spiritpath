@@ -13,6 +13,7 @@ import UserNotifications
 struct SpiritPathApp: App {
     init() {
         SpiritFonts.registerAll()
+        Analytics.initialize()
     }
 
     var body: some Scene {
@@ -138,6 +139,7 @@ private struct SpiritMatch {
     let shortName: String
     let style: String
     let explanation: String
+    let lineageId: String  // 'mun' | 'sodh' | 'chah' · Postgres enum wire value · Mixpanel property
 }
 
 extension SpiritMatch {
@@ -145,22 +147,38 @@ extension SpiritMatch {
         master: "Luang Pu Mun Bhūridatto",
         shortName: "Luang Pu Mun",
         style: "Forest · Kammaṭṭhāna",
-        explanation: "His teachings turn walking itself into awareness — matching your answers from the quiz."
+        explanation: "His teachings turn walking itself into awareness — matching your answers from the quiz.",
+        lineageId: "mun"
     )
 
     static let chah = SpiritMatch(
         master: "Luang Por Chah",
         shortName: "Luang Por Chah",
         style: "Forest · Wat Pah Pong",
-        explanation: "His teachings meet nature with simple, direct wisdom — matching your answers from the quiz."
+        explanation: "His teachings meet nature with simple, direct wisdom — matching your answers from the quiz.",
+        lineageId: "chah"
     )
 
     static let sodh = SpiritMatch(
         master: "Luang Pu Sodh Candasaro",
         shortName: "Luang Pu Sodh",
         style: "Inner Light · Mantra Stillness",
-        explanation: "His teachings focus on calming the mind through inner stillness and light — matching your answers from the quiz."
+        explanation: "His teachings focus on calming the mind through inner stillness and light — matching your answers from the quiz.",
+        lineageId: "sodh"
     )
+}
+
+private extension OnboardingState {
+    /// Map UI label → Postgres path_id enum wire value · keep in sync with V1 enum.
+    var pathIdWire: String {
+        switch selectedPath {
+        case "Mindful Walking":       return "mindful_walking"
+        case "Everyday Mindfulness":  return "everyday"
+        case "Awareness in Body":     return "body"
+        case "Forest Retreat":        return "retreat"
+        default:                      return "mindful_walking"
+        }
+    }
 }
 
 private struct OnboardingView: View {
@@ -172,6 +190,7 @@ private struct OnboardingView: View {
     @State private var soundOn = false
     @State private var didCompleteAuth = false
     @State private var didApplyDebugStart = false
+    @State private var notificationsGranted = false
     @State private var outgoingGroup2Screen: Int?
     @State private var group2SlideDirection = 1
     @State private var group2SlideProgress = 1.0
@@ -274,6 +293,7 @@ private struct OnboardingView: View {
             }
         case 16:
             AuthScreen {
+                fireOnboardingCompleted()
                 withAnimation(.easeInOut(duration: 0.2)) {
                     didCompleteAuth = true
                 }
@@ -454,7 +474,29 @@ private struct OnboardingView: View {
     }
 
     private func requestNotifications() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { _, _ in }
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
+            Task { @MainActor in
+                notificationsGranted = granted
+            }
+        }
+    }
+
+    private func currentLocationGranted() -> Bool {
+        let status = CLLocationManager().authorizationStatus
+        return status == .authorizedAlways || status == .authorizedWhenInUse
+    }
+
+    private func fireOnboardingCompleted() {
+        Analytics.track(.onboardingCompleted(
+            lineageId: state.spiritMatch.lineageId,
+            pathId: state.pathIdWire,
+            meditationExperience: state.meditationExp,
+            peaceContext: state.peacefulMoment,
+            environmentTagsCount: state.focusPlaces.count,
+            guidanceTagsCount: state.teachingTypes.count,
+            notificationsGranted: notificationsGranted,
+            locationGranted: currentLocationGranted()
+        ))
     }
 
     private func applyDebugStartIfNeeded() {
@@ -943,6 +985,13 @@ private struct PaywallScreen: View {
             Spacer()
 
             Text("Walk further, together.")
+                .onAppear {
+                    Analytics.track(.paywallViewed(
+                        paywallVariant: "default",     // Phase 2: read from feature_flags
+                        triggerSource: "onboarding",   // this paywall fires during onboarding flow
+                        hasPreviousTrial: false        // Phase 1.7: query user_subscriptions when auth wires
+                    ))
+                }
                 .font(.system(size: 32, weight: .bold))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Color.spiritPrimary)
