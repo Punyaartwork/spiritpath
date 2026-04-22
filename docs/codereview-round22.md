@@ -4,8 +4,44 @@
 **To:** iOS + Android sessions (both must sign)
 **Date:** 2026-04-22
 **Re:** (a) revise C4 event-naming from `"Title Case with Spaces"` → `snake_case` · (b) lock Mixpanel taxonomy for Phase 1.5 · 5 events · before any SDK wiring
-**Status:** ⏳ open · awaiting iOS + Android acknowledge · **no code lands on either platform until both sign**
+**Status:** ✅ CLOSED · both platforms signed 2026-04-22 · wave 7 closed
 **Project token:** `373e5c078bbe0d04b8be993cfb818df5`
+
+---
+
+## Sign record
+
+**iOS session · signed 2026-04-22**
+- SPM install: Xcode UI · `mixpanel-swift` · `upToNextMajorVersion · minimumVersion 5.0.0` · mirrors supabase-swift pin pattern
+- PrivacyInfo: create new `SpiritPath/PrivacyInfo.xcprivacy` (bundle root) · `NSPrivacyTracking=false` · ProductInteraction + OtherDataTypes (distinct_id linkage)
+- Identity hooks: init in `SpiritPathApp.init()` after `SpiritFonts.registerAll()` · re-identify on scenePhase `.active` · Supabase `onAuthStateChange` observer · `reset()` on signOut
+- Caveat: real Supabase auth wiring is Phase 1.7 (StoreKit + Sign-in + Crash reporter bundle) · identify hooks stubbed in `Core/Services/Analytics.swift` now · activate when auth lands
+- Wrapper: typed enum `AnalyticsEvent` with 5 cases · consent gate at `track()` call site
+
+**Android session · signed 2026-04-22**
+- Gradle pin: `com.mixpanel.android:mixpanel-android:7.5.2` specific (not `7.+`) · explicit-bump-via-PR discipline
+- No conflicts with Compose BOM · Supabase BOM 3.3.0 · Ktor 3.3.3 · DataStore · minSdk 28 ≥ Mixpanel 21
+- Create `SpiritPathApplication.kt` (doesn't exist today · manifest update `android:name=".SpiritPathApplication"`) · Hilt stub without `@HiltAndroidApp` · retrofit when Hilt decision lands
+- Identity hooks: create `core/data/repository/AuthRepository.kt` · observe `SupabaseClient.auth.sessionStatus` StateFlow · `ProcessLifecycleOwner.ON_START` for foreground re-identify
+- Wrapper: sealed class `AnalyticsEvent` with 5 variants · mirror iOS enum
+
+## Post-sign refinements (silently applied · strict subset of accepted scope)
+
+**R1 · Event 3 `ended_reason` enum refinement** · drop `phone_call` value
+- **Old list (pre-sign):** `natural` · `user_abort` · `background_timeout` · `phone_call`
+- **New list (post-sign):** `natural` · `user_abort` · `background_timeout` · `other`
+- Rationale: `phone_call` requires `READ_PHONE_STATE` (Android sensitive permission · Data Safety justify) or CallKit observer (iOS) · disproportionate complexity for a categorization property
+- Use `other` for any interruption Android/iOS cannot classify as natural/user_abort/background_timeout
+- Part 2 Event 3 property spec updated below (Action item: both platforms use the new 4-value enum)
+
+## Deferred / tracked · non-blocking
+
+- **D1 · Token environment** (dev vs prod) · current `373e5c078bbe0d04b8be993cfb818df5` is being used by both platforms until user confirms · recommend user create a dedicated dev project before Phase 1.3 events actually instrument (Phase 1.5 wiring window is fine on shared token since events will mostly be stubs)
+- **D2 · `moments_of_return`** · both platforms emit `0` constant at stub call site · revisit in Phase 1.3 session-mechanic round
+- **D3 · CLAUDE.md doc drift (Android)** · file-map line 60 aspirationally lists `SpiritPathApplication.kt` · reality lags · Android session to clean when the class actually lands as part of wiring
+- **D4 · Hilt retrofit** · when Hilt decision lands (user-owned blocker · wave 1 open) · Android wiring adds `@HiltAndroidApp` + `@Provides AnalyticsClient` · 1-line edits
+
+---
 
 ---
 
@@ -101,7 +137,7 @@ All 5 events fire on BOTH iOS and Android. Parity is mandatory. Dashboards block
 | `total_steps` | number | raw pedometer count | 0 if permission denied |
 | `moments_of_return` | number | count of "bring back to breath" events during session | 0 if not tracked yet |
 | `completed` | boolean | true = session finished naturally · false = user bailed | **KPI flag** |
-| `ended_reason` | string | `natural` · `user_abort` · `background_timeout` · `phone_call` | optional · null if not categorized |
+| `ended_reason` | string | `natural` · `user_abort` · `background_timeout` · `other` | optional · null if not categorized · `phone_call` dropped post-sign R1 · use `other` for interruptions that can't be classified |
 
 ### Event 4 · `reflection_submitted`
 
@@ -408,4 +444,4 @@ Applies to user-visible copy · not to internal event names. R22 clarifies this 
 
 ---
 
-**Round 22 open · awaiting iOS + Android sign.**
+**Round 22 closed · wave 7 closed · iOS + Android signed 2026-04-22 · post-sign refinements silently applied (ended_reason enum trimmed).**
