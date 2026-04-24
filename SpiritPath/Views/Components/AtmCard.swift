@@ -2,10 +2,11 @@
 //  AtmCard.swift
 //  SpiritPath
 //
-//  Atmospheric card wrapper · 3 tones matching prototype <AtmCard tone="low|lowest|primary">.
-//  low     → Surface.card   (#111D33)  regular card
-//  lowest  → Surface.raised (#152544)  elevated
-//  primary → Accent.primary (#F0C870)  gold · use OnGold ink inside
+//  Atmospheric card wrapper · 4 tones matching prototype <AtmCard tone="low|lowest|high|primary">.
+//  low     → Surface.card     (#111D33)  regular card
+//  lowest  → Surface.raised   (#152544)  elevated
+//  high    → Surface.selected (#1C2F54)  raised · used by Reflection Note card
+//  primary → Accent.primary   (#F0C870)  gold · use OnGold ink inside
 //
 
 import SwiftUI
@@ -14,6 +15,7 @@ struct AtmCard<Content: View>: View {
     enum Tone {
         case low
         case lowest
+        case high
         case primary
     }
 
@@ -35,6 +37,7 @@ struct AtmCard<Content: View>: View {
         switch tone {
         case .low:     return AppTheme.Surface.card
         case .lowest:  return AppTheme.Surface.raised
+        case .high:    return AppTheme.Surface.selected
         case .primary: return AppTheme.Accent.primary
         }
     }

@@ -119,23 +119,23 @@ struct ReflectionView: View {
         }
     }
 
-    // MARK: · note card (tone primary · gold)
+    // MARK: · note card (tone high · navy raised · prototype screen-reflection.jsx:42)
 
     private var noteCard: some View {
-        AtmCard(tone: .primary, padding: 22) {
+        AtmCard(tone: .high, padding: 22) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
                     Image(systemName: "pencil")
                         .font(.system(size: 14))
-                        .foregroundStyle(AppTheme.Accent.onPrimary)
+                        .foregroundStyle(AppTheme.Accent.secondary)
                     Text("What did you find today?")
                         .font(.custom("DMSerifDisplay-Italic", size: 16))
-                        .foregroundStyle(AppTheme.Accent.onPrimary)
+                        .foregroundStyle(AppTheme.Ink.primary)
                 }
 
                 ZStack(alignment: .topLeading) {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(AppTheme.Surface.raised)
+                        .fill(AppTheme.Surface.card)   // darker inset against raised bg
                         .frame(minHeight: 100)
 
                     if note.isEmpty {
