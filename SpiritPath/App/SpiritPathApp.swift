@@ -698,7 +698,7 @@ private struct CardQuestionScreen: View {
         Group2Screen(progressIndex: progressIndex, showsBack: true, onBack: onBack) {
             Spacer().frame(height: 82)
 
-            Eyebrow(text: eyebrow)
+            OnboardingEyebrow(text: eyebrow)
 
             Text(title)
                 .font(.system(size: 26, weight: .bold))
@@ -794,7 +794,7 @@ private struct ChipQuestionScreen: View {
         Group2Screen(progressIndex: progressIndex, showsBack: true, onBack: onBack) {
             Spacer().frame(height: 82)
 
-            Eyebrow(text: eyebrow)
+            OnboardingEyebrow(text: eyebrow)
 
             Text(title)
                 .font(.system(size: 26, weight: .bold))
@@ -1254,7 +1254,9 @@ private struct ValueRow: View {
     }
 }
 
-private struct Eyebrow: View {
+// Onboarding-only eyebrow · private · do not collapse with global Eyebrow in
+// Views/Components/Eyebrow.swift (different styling · Phase 0 editorial keeps its own).
+private struct OnboardingEyebrow: View {
     let text: String
 
     var body: some View {

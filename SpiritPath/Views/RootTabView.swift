@@ -16,7 +16,12 @@ struct RootTabView: View {
         ZStack(alignment: .bottom) {
             Group {
                 switch screen {
-                case .home:       HomeView()
+                case .home:
+                    HomeView(onStartSession: {
+                        withAnimation(.easeInOut(duration: 0.5)) {
+                            screen = .session
+                        }
+                    })
                 case .practice:   PracticeView()
                 case .journey:    JourneyView()
                 case .stillness:  StillnessView()
