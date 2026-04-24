@@ -114,8 +114,8 @@ private struct OnboardingState {
     }
 
     var spiritMatch: SpiritMatch {
-        let beginner = meditationExp.contains("Never") || meditationExp.contains("A little")
-        let experienced = meditationExp.contains("Yes")
+        let beginner = meditationExp.hasPrefix("Never") || meditationExp.hasPrefix("A little")
+        let experienced = meditationExp.hasPrefix("Yes")
         let silence = teachingTypes.contains("Silence-based")
         let nature = teachingTypes.contains("Nature connection") || focusPlaces.contains("Forest / Park") || focusPlaces.contains("Near water") || focusPlaces.contains("Open fields") || focusPlaces.contains("Mountains")
         let breathBody = teachingTypes.contains("Breathwork") || teachingTypes.contains("Body awareness")
