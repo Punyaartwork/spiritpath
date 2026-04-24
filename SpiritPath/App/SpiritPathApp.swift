@@ -496,6 +496,10 @@ private struct OnboardingView: View {
     }
 
     private func fireOnboardingCompleted() {
+        // Phase 1.3 · cache lineage for SessionContext builder in RootTabView.
+        // Later phases wire this through profiles row · for now @AppStorage is source.
+        UserDefaults.standard.set(state.spiritMatch.lineageId, forKey: "selected_lineage_id")
+
         Analytics.track(.onboardingCompleted(
             lineageId: state.spiritMatch.lineageId,
             pathId: state.pathIdWire,
