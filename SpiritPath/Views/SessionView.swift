@@ -270,6 +270,11 @@ struct SessionView: View {
 
     private func onAppearStart() {
         // Idempotent · guard replays if view re-appears.
+        // Phase 1.6 · stamp startedAt before fireStartedOnce so HealthKit query has a range.
+        if var ctx = context, ctx.startedAt == nil {
+            ctx.startedAt = Date()
+            context = ctx
+        }
         fireStartedOnce()
         startBreathLoop()
         startPhraseRotation()
@@ -347,34 +352,59 @@ struct SessionView: View {
     private func endSession(natural: Bool = false) {
         guard !didFireEnd else { return }
         didFireEnd = true
+        stopTimers()
 
         let completed = natural
         let reason = natural ? "natural" : "user_abort"
+        let endedAt = Date()
 
-        if var ctx = context {
-            ctx.elapsedSec = elapsed
-            ctx.endedAt = Date()
-            ctx.endedReason = reason
-            ctx.completed = completed
-            context = ctx
-
-            Analytics.track(.sessionEnded(
-                sessionUuid: ctx.uuid,
-                sessionType: ctx.sessionType,
-                lineageId: ctx.lineageId,
-                stageIndexAtTime: ctx.stageIndex,
-                durationTargetSec: ctx.targetSec,
-                durationActualSec: elapsed,
-                mindfulSteps: ctx.mindfulSteps,
-                totalSteps: ctx.totalSteps,
-                momentsOfReturn: ctx.momentsOfReturn,
-                completed: completed,
-                endedReason: reason
-            ))
+        // Snapshot context before async work so we can fire even if view tears down.
+        guard var ctx = context else {
+            onEnd()
+            return
         }
+        ctx.elapsedSec = elapsed
+        ctx.endedAt = endedAt
+        ctx.endedReason = reason
+        ctx.completed = completed
+        let started = ctx.startedAt ?? endedAt.addingTimeInterval(-Double(elapsed))
 
-        stopTimers()
-        onEnd()
+        Task {
+            // Phase 1.6 · query real step count · 0 if denied / unavailable.
+            let steps = (try? await HealthService.shared.stepCount(from: started, to: endedAt)) ?? 0
+
+            // Phase 1.6 · write mindful session (silent failure · best effort).
+            try? await HealthService.shared.writeMindfulSession(
+                start: started,
+                end: endedAt,
+                sessionUuid: ctx.uuid,
+                lineageId: ctx.lineageId,
+                stageIndex: ctx.stageIndex
+            )
+
+            await MainActor.run {
+                // Phase 1.6 · mindful_steps == total_steps until gait detection lands Phase 2.
+                ctx.mindfulSteps = steps
+                ctx.totalSteps   = steps
+                context = ctx
+
+                Analytics.track(.sessionEnded(
+                    sessionUuid: ctx.uuid,
+                    sessionType: ctx.sessionType,
+                    lineageId: ctx.lineageId,
+                    stageIndexAtTime: ctx.stageIndex,
+                    durationTargetSec: ctx.targetSec,
+                    durationActualSec: elapsed,
+                    mindfulSteps: ctx.mindfulSteps,
+                    totalSteps: ctx.totalSteps,
+                    momentsOfReturn: ctx.momentsOfReturn,
+                    completed: completed,
+                    endedReason: reason
+                ))
+
+                onEnd()
+            }
+        }
     }
 }
 

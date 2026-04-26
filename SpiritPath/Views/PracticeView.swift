@@ -17,6 +17,10 @@ struct PracticeView: View {
     @AppStorage("pref.ground")   private var ground: String   = "grass"
     @AppStorage("pref.pace")     private var pace: String     = "forest"
 
+    /// Phase 1.6 · refreshed on appear and after permission flow · drives the
+    /// "Health permission requested on first session." micro-copy gate.
+    @State private var healthStatusUndetermined: Bool = false
+
     private let durations = ["15 MINS", "30 MINS", "60 MINS"]
 
     private let grounds: [(id: String, label: String, sub: String, icon: String)] = [
@@ -44,6 +48,9 @@ struct PracticeView: View {
                 beginSection
                 Color.clear.frame(height: 80)   // tab bar spacer
             }
+        }
+        .onAppear {
+            healthStatusUndetermined = HealthService.shared.permissionUndetermined
         }
     }
 
@@ -315,7 +322,14 @@ struct PracticeView: View {
 
     private var beginSection: some View {
         VStack(spacing: 14) {
-            Button(action: onBegin) {
+            if healthStatusUndetermined {
+                Text("Health permission requested on first session.")
+                    .font(.custom("Manrope", size: 11))
+                    .foregroundStyle(AppTheme.Ink.muted)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+
+            Button(action: handleBegin) {
                 HStack(spacing: 8) {
                     Text("Begin your walk")
                         .font(.custom("Manrope", size: 15))
@@ -340,6 +354,21 @@ struct PracticeView: View {
         }
         .padding(.horizontal, 22)
         .padding(.bottom, 32)
+    }
+
+    /// Phase 1.6 · ask once · proceed regardless of grant outcome.
+    /// Subsequent sessions skip the prompt; we still proceed to Begin either way.
+    private func handleBegin() {
+        if HealthService.shared.permissionUndetermined {
+            Task {
+                try? await HealthService.shared.requestAuthorization()
+                // status now flipped (granted or denied) · proceed either way
+                healthStatusUndetermined = false
+                await MainActor.run { onBegin() }
+            }
+        } else {
+            onBegin()
+        }
     }
 }
 

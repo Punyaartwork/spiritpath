@@ -7,8 +7,9 @@
 //  Carries the session UUID that ties session_started · session_ended · reflection_submitted
 //  together for Mixpanel funnel matching + future Supabase sessions row.
 //
-//  Mock step/return values land Phase 1.6 (HealthKit read + CoreMotion pedometer).
-//  Supabase persistence lands Phase 1.7 (auth + offline-first write).
+//  Phase 1.6 · `startedAt` captured at SessionView .onAppear · used for HealthKit
+//  stepCount(from:to:) range query at end + writeMindfulSession(start:end:) entry.
+//  `mindfulSteps == totalSteps` per spec C5 (gait detection lands Phase 2).
 //
 
 import Foundation
@@ -23,6 +24,9 @@ struct SessionContext: Equatable {
     let ground: String          // "grass" · "earth" · "stone" · "indoors"
     let paceMode: String        // "forest" · "temple" · "street"
 
+    // Phase 1.6 · stamped at SessionView .onAppear
+    var startedAt: Date?
+
     // Updated during session
     var elapsedSec: Int = 0
 
@@ -31,8 +35,8 @@ struct SessionContext: Equatable {
     var endedReason: String?    // "natural" · "user_abort"
     var completed: Bool = false
 
-    // Mock values · Phase 1.6 wire HealthKit + CoreMotion
-    var mindfulSteps: Int = 320
-    var totalSteps: Int = 500
+    // Phase 1.6 · real values from HealthKit · 0 if permission denied
+    var mindfulSteps: Int = 0
+    var totalSteps: Int = 0
     var momentsOfReturn: Int = 0
 }

@@ -20,11 +20,13 @@ struct ReflectionView: View {
     @State private var note: String = ""
     @State private var didFireSubmit = false
 
-    // Mock · real values land Phase 1.6 (HealthKit + CoreMotion)
-    private var mindfulSteps: Int { context?.mindfulSteps ?? 320 }
-    private var totalSteps: Int { context?.totalSteps ?? 500 }
+    // Phase 1.6 · real values from HealthKit · 0 if permission denied or unavailable.
+    // mindful_steps == total_steps until gait detection lands Phase 2.
+    private var mindfulSteps: Int { context?.mindfulSteps ?? 0 }
+    private var totalSteps: Int { context?.totalSteps ?? 0 }
+    private var hasSteps: Bool { totalSteps > 0 }
     private var progress: Double {
-        guard totalSteps > 0 else { return 0 }
+        guard hasSteps else { return 0 }
         return Double(mindfulSteps) / Double(totalSteps)
     }
 
@@ -88,20 +90,31 @@ struct ReflectionView: View {
                         .foregroundStyle(AppTheme.Ink.primary)
                         .multilineTextAlignment(.center)
                         .padding(.top, 14)
-                    Text("\(mindfulSteps) of your \(totalSteps) steps were walked\nwith awareness.")
+                    Text(stepLineText)
                         .font(.custom("Manrope", size: 13))
                         .foregroundStyle(AppTheme.Ink.soft)
                         .multilineTextAlignment(.center)
                         .padding(.top, 14)
-                    SacredLine(progress: progress, color: AppTheme.Accent.primary)
-                        .padding(.horizontal, 20)
-                        .padding(.top, 22)
+                    if hasSteps {
+                        SacredLine(progress: progress, color: AppTheme.Accent.primary)
+                            .padding(.horizontal, 20)
+                            .padding(.top, 22)
+                    }
                 }
                 .frame(maxWidth: .infinity)
             }
         }
         .padding(.horizontal, 18)
         .padding(.bottom, 16)
+    }
+
+    /// Phase 1.6 · branches on real HealthKit value · skill C5 locked copy.
+    private var stepLineText: String {
+        if hasSteps {
+            return "\(totalSteps) steps walked with awareness."
+        } else {
+            return "Step tracking unavailable for this session."
+        }
     }
 
     private var sessionCompleteMark: some View {
@@ -231,20 +244,26 @@ struct ReflectionView: View {
 
 #Preview {
     struct PreviewWrapper: View {
-        @State var ctx: SessionContext? = SessionContext(
-            uuid: UUID().uuidString,
-            sessionType: "walking",
-            lineageId: "sodh",
-            stageIndex: 1,
-            targetSec: 1800,
-            place: "forest",
-            ground: "grass",
-            paceMode: "forest",
-            elapsedSec: 1650,
-            endedAt: Date(),
-            endedReason: "natural",
-            completed: true
-        )
+        @State var ctx: SessionContext? = {
+            var c = SessionContext(
+                uuid: UUID().uuidString,
+                sessionType: "walking",
+                lineageId: "sodh",
+                stageIndex: 1,
+                targetSec: 1800,
+                place: "forest",
+                ground: "grass",
+                paceMode: "forest"
+            )
+            c.startedAt = Date().addingTimeInterval(-1800)
+            c.elapsedSec = 1650
+            c.endedAt = Date()
+            c.endedReason = "natural"
+            c.completed = true
+            c.mindfulSteps = 320
+            c.totalSteps = 320
+            return c
+        }()
         var body: some View {
             ZStack {
                 AppBackground(style: .day)
