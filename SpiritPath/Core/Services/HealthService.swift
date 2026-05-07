@@ -108,22 +108,29 @@ final class HealthService {
         }
     }
 
-    /// Writes a mindful session sample · skill rule C5 · 3 metadata keys (session_uuid ·
-    /// lineage_id · stage_index) so the entry can round-trip to a Supabase sessions row
-    /// without leaking step/duration data.
+    /// Writes a mindful session sample · skill rule C5 · M13 canonical metadata.
+    ///
+    /// Walking sessions: all 3 keys (session_uuid · lineage_id · stage_index).
+    /// Breath/quiet sessions (Phase 2.4): pass nil for stage_index · key OMITTED rather than
+    /// sent as empty so the round-trip schema stays clean.
+    ///
+    /// Permission and availability are best-effort: HealthKit unavailable simulators / iPad
+    /// silently no-op without throwing · session continues normally either way (Section 4.5).
     func writeMindfulSession(
         start: Date,
         end: Date,
         sessionUuid: String,
         lineageId: String,
-        stageIndex: Int
+        stageIndex: Int? = nil
     ) async throws {
         guard isAvailable else { return }
-        let metadata: [String: Any] = [
+        var metadata: [String: Any] = [
             "session_uuid": sessionUuid,
-            "lineage_id":   lineageId,
-            "stage_index":  stageIndex
+            "lineage_id":   lineageId
         ]
+        if let stageIndex {
+            metadata["stage_index"] = stageIndex
+        }
         let sample = HKCategorySample(
             type: mindfulType,
             value: HKCategoryValue.notApplicable.rawValue,
