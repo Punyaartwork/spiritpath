@@ -37,7 +37,7 @@ struct RootTabView: View {
                 case .journey:
                     JourneyView()
                 case .stillness:
-                    StillnessView(onOpenNightLog: navigateToNightLog)
+                    StillnessView()
                 case .session:
                     SessionView(
                         context: $sessionContext,
