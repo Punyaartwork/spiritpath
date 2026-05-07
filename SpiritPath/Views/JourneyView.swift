@@ -286,8 +286,8 @@ struct JourneyView: View {
     }
 
     private var currentLineageDisplay: LineagePickerOption {
-        LineageDisplay.options.first(where: { $0.id == viewModel.lineageId })
-            ?? LineageDisplay.options[0]
+        LineagePickerOptions.options.first(where: { $0.id == viewModel.lineageId })
+            ?? LineagePickerOptions.options[0]
     }
 
     /// Phase 2.1 placeholder · Phase 2.6 wires onCompareLineages → RootTabView openCompare().
@@ -385,6 +385,7 @@ struct JourneyView: View {
                 stageIndex: idx + 1,
                 title: title,
                 subtitle: nil,
+                keyImageRef: nil,
                 anchorPhrase: nil,
                 trapWarning: nil
             )

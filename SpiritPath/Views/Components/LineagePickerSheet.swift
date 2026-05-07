@@ -19,7 +19,7 @@ struct LineagePickerOption: Identifiable, Equatable {
 
 /// Cross-platform locked · matches Android LineageDisplayConstants.
 /// Order: mun (forest) · sodh (inner light) · chah (forest · WPP).
-enum LineageDisplay {
+enum LineagePickerOptions {
     static let options: [LineagePickerOption] = [
         LineagePickerOption(
             id: "mun",
@@ -61,7 +61,7 @@ struct LineagePickerSheet: View {
                 .padding(.bottom, 18)
 
             VStack(spacing: 10) {
-                ForEach(LineageDisplay.options) { option in
+                ForEach(LineagePickerOptions.options) { option in
                     optionRow(option)
                 }
             }

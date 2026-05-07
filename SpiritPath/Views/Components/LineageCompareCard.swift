@@ -171,10 +171,10 @@ struct LineageCompareCard: View {
         title: "The Outer Path",
         subtitle: "A whole-in-motion,\nnoticing the world",
         keyImageRef: nil,
-        trapWarning: "Austerity as identity — The practices become a badge. The forest becomes a costume.",
-        anchorPhrase: "Buddho"
+        anchorPhrase: "Buddho",
+        trapWarning: "Austerity as identity — The practices become a badge. The forest becomes a costume."
     )
-    return ScrollView {
+    ScrollView {
         VStack(spacing: 12) {
             LineageCompareCard(lineage: .mun, stage: mock, lens: .summary)
             LineageCompareCard(lineage: .sodh, stage: mock, lens: .image)
