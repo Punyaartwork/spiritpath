@@ -19,11 +19,12 @@ enum Screen: String, CaseIterable {
     // Modal / pushed fullscreen · tab bar hidden
     case session    = "session"
     case reflection = "reflection"
+    case compare    = "compare"
 
     var showsTabBar: Bool {
         switch self {
         case .home, .practice, .journey, .stillness: return true
-        case .session, .reflection:                  return false
+        case .session, .reflection, .compare:        return false
         }
     }
 }
