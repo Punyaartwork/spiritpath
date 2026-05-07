@@ -6,6 +6,9 @@
 //  All rows are server-published content (Supabase RLS Pattern A · public read).
 //  iOS reads Supabase directly · no local cache yet (Phase 1.7e+).
 //
+//  Phase 2.6 · adds fetchStagesAllLineages for cross-lineage Compare view ·
+//  single SELECT + Dictionary(grouping:) is cheaper than 3 sequential queries.
+//
 //  DTOs decode from V1 + V3 + V9 schema · CodingKeys map snake_case → camelCase.
 //
 
@@ -64,6 +67,20 @@ final class ContentRepository {
             .order("stage_index")
             .execute()
             .value
+    }
+
+    /// Phase 2.6 · fetch all 15 stage rows (3 lineages × 5 stages) and group by lineage_id.
+    /// Returns `[lineageId: [StageRow]]` where each value is sorted by stageIndex ascending.
+    /// Used by CompareView for cross-lineage parallel display.
+    func fetchStagesAllLineages() async throws -> [String: [StageRow]] {
+        let all: [StageRow] = try await supabase
+            .from("stages")
+            .select()
+            .execute()
+            .value
+
+        return Dictionary(grouping: all, by: { $0.lineageId })
+            .mapValues { $0.sorted(by: { $0.stageIndex < $1.stageIndex }) }
     }
 
     /// Active lineages · used by LineagePickerSheet.

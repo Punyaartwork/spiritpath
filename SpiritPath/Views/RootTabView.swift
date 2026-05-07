@@ -35,9 +35,11 @@ struct RootTabView: View {
                 case .practice:
                     PracticeView(onBegin: startSession)
                 case .journey:
-                    JourneyView()
+                    JourneyView(onCompareLineages: openCompare)
                 case .stillness:
                     StillnessView()
+                case .compare:
+                    CompareView(onBack: closeCompare)
                 case .session:
                     SessionView(
                         context: $sessionContext,
@@ -113,6 +115,20 @@ struct RootTabView: View {
         // Clear after transition so ReflectionView doesn't flash empty state.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             sessionContext = nil
+        }
+    }
+
+    // MARK: · compare flow · entered from JourneyView card · returns to Journey on back
+
+    private func openCompare() {
+        withAnimation(.easeInOut(duration: 0.5)) {
+            screen = .compare
+        }
+    }
+
+    private func closeCompare() {
+        withAnimation(.easeInOut(duration: 0.5)) {
+            screen = .journey
         }
     }
 

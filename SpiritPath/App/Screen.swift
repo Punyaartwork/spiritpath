@@ -2,7 +2,7 @@
 //  Screen.swift
 //  SpiritPath
 //
-//  Flat state machine nav · 6 cases · cross-platform locked · Phase 1.1.
+//  Flat state machine nav · 8 cases · cross-platform locked · Phase 1.1.
 //  Mirrors Android Screen enum · raw values are wire values for future deep links / Mixpanel.
 //  Do not change raw values without a sync round.
 //
@@ -20,11 +20,12 @@ enum Screen: String, CaseIterable {
     case session    = "session"
     case reflection = "reflection"
     case nightlog   = "nightlog"   // Phase 2.4b · before-sleep reflection
+    case compare    = "compare"    // Phase 2.6 · cross-lineage view
 
     var showsTabBar: Bool {
         switch self {
-        case .home, .practice, .journey, .stillness: return true
-        case .session, .reflection, .nightlog:       return false
+        case .home, .practice, .journey, .stillness:    return true
+        case .session, .reflection, .nightlog, .compare: return false
         }
     }
 }
