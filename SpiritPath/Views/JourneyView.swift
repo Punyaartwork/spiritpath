@@ -104,7 +104,11 @@ struct JourneyView: View {
     @AppStorage("selected_lineage_id") private var storedLineageId: String = "sodh"
     @State private var presentedStage: StageDetailParams?
 
-    init(initialLineageId: String? = nil) {
+    /// Phase 2.6 · callback to navigate to CompareView · invoked from compareCard tap.
+    var onCompareLineages: () -> Void = {}
+
+    init(initialLineageId: String? = nil, onCompareLineages: @escaping () -> Void = {}) {
+        self.onCompareLineages = onCompareLineages
         let initial = initialLineageId
             ?? UserDefaults.standard.string(forKey: "selected_lineage_id")
             ?? "sodh"
@@ -286,10 +290,10 @@ struct JourneyView: View {
             ?? LineageDisplay.options[0]
     }
 
-    /// Phase 2.1 · placeholder navigation · Phase 2.6 ships Compare lineages screen.
+    /// Phase 2.1 placeholder · Phase 2.6 wires onCompareLineages → RootTabView openCompare().
     private var compareCard: some View {
         Button {
-            // Phase 2.6 · Compare lineages destination · stub for now (no nav).
+            onCompareLineages()
         } label: {
             HStack(spacing: 12) {
                 HStack(spacing: 3) {

@@ -18,11 +18,12 @@ import PostgREST
 
 // MARK: · Row DTOs
 
-struct StageRow: Codable, Identifiable, Equatable {
+struct StageRow: Codable, Identifiable, Equatable, Hashable {
     let lineageId: String
     let stageIndex: Int
     let title: String
     let subtitle: String?
+    let keyImageRef: String?         // Phase 2.6 · used by CompareView image lens
     let anchorPhrase: String?
     let trapWarning: String?
 
@@ -32,6 +33,7 @@ struct StageRow: Codable, Identifiable, Equatable {
         case title, subtitle
         case lineageId = "lineage_id"
         case stageIndex = "stage_index"
+        case keyImageRef = "key_image_ref"
         case anchorPhrase = "anchor_phrase"
         case trapWarning = "trap_warning"
     }
