@@ -37,7 +37,7 @@ struct RootTabView: View {
                 case .journey:
                     JourneyView()
                 case .stillness:
-                    StillnessView()
+                    StillnessView(onOpenNightLog: navigateToNightLog)
                 case .session:
                     SessionView(
                         context: $sessionContext,
@@ -48,6 +48,8 @@ struct RootTabView: View {
                         context: $sessionContext,
                         onExit: navigateHome
                     )
+                case .nightlog:
+                    NightLogView(onDismiss: navigateToStillness)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -62,9 +64,9 @@ struct RootTabView: View {
 
     private var backgroundStyle: AppBackgroundStyle {
         switch screen {
-        case .stillness:  return .night
-        case .session:    return .gradientDepth
-        default:          return .day
+        case .stillness, .nightlog: return .night
+        case .session:              return .gradientDepth
+        default:                    return .day
         }
     }
 
@@ -89,6 +91,18 @@ struct RootTabView: View {
     private func navigateToReflection() {
         withAnimation(.easeInOut(duration: 0.5)) {
             screen = .reflection
+        }
+    }
+
+    private func navigateToNightLog() {
+        withAnimation(.easeInOut(duration: 0.5)) {
+            screen = .nightlog
+        }
+    }
+
+    private func navigateToStillness() {
+        withAnimation(.easeInOut(duration: 0.5)) {
+            screen = .stillness
         }
     }
 
