@@ -17,9 +17,9 @@ struct PracticeView: View {
     @AppStorage("pref.ground")   private var ground: String   = "grass"
     @AppStorage("pref.pace")     private var pace: String     = "forest"
 
-    /// Phase 1.6 · refreshed on appear and after permission flow · drives the
-    /// "Health permission requested on first session." micro-copy gate.
-    @State private var healthStatusUndetermined: Bool = false
+    /// Phase 1.6 · refreshed on appear and after permission flow · drives micro-copy
+    /// shown above the Begin button. Hides HKAuthorizationStatus from the view layer.
+    @State private var healthState: HealthService.PermissionState = .undetermined
 
     private let durations = ["15 MINS", "30 MINS", "60 MINS"]
 
@@ -50,7 +50,10 @@ struct PracticeView: View {
             }
         }
         .onAppear {
-            healthStatusUndetermined = HealthService.shared.permissionUndetermined
+            healthState = HealthService.shared.permissionState
+            #if DEBUG
+            print("Practice .onAppear · health state: \(healthState)")
+            #endif
         }
     }
 
@@ -322,8 +325,8 @@ struct PracticeView: View {
 
     private var beginSection: some View {
         VStack(spacing: 14) {
-            if healthStatusUndetermined {
-                Text("Health permission requested on first session.")
+            if let line = healthMicroCopy {
+                Text(line)
                     .font(.custom("Manrope", size: 11))
                     .foregroundStyle(AppTheme.Ink.muted)
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -356,14 +359,24 @@ struct PracticeView: View {
         .padding(.bottom, 32)
     }
 
+    /// State-aware micro-copy · only shown for non-granted states · skill-tone phrasing.
+    private var healthMicroCopy: String? {
+        switch healthState {
+        case .undetermined: return "Health permission requested on first session."
+        case .denied:       return "Health access off · sessions still walk."
+        case .granted:      return nil   // success state hidden · we're tracking quietly
+        case .unavailable:  return nil   // older sim / iPad · no need to draw attention
+        }
+    }
+
     /// Phase 1.6 · ask once · proceed regardless of grant outcome.
     /// Subsequent sessions skip the prompt; we still proceed to Begin either way.
     private func handleBegin() {
-        if HealthService.shared.permissionUndetermined {
+        if healthState == .undetermined {
             Task {
                 try? await HealthService.shared.requestAuthorization()
-                // status now flipped (granted or denied) · proceed either way
-                healthStatusUndetermined = false
+                // status now flipped (granted or denied) · refresh + proceed either way
+                healthState = HealthService.shared.permissionState
                 await MainActor.run { onBegin() }
             }
         } else {

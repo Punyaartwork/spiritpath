@@ -19,6 +19,7 @@ struct ReflectionView: View {
 
     @State private var note: String = ""
     @State private var didFireSubmit = false
+    @FocusState private var noteFocused: Bool
 
     // Phase 1.6 · real values from HealthKit · 0 if permission denied or unavailable.
     // mindful_steps == total_steps until gait detection lands Phase 2.
@@ -39,6 +40,14 @@ struct ReflectionView: View {
                 noteCard
                 completeButton
                 discardButton
+            }
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { noteFocused = false }
+                    .font(.system(size: 17, weight: .semibold))
             }
         }
     }
@@ -165,6 +174,7 @@ struct ReflectionView: View {
                         .scrollContentBackground(.hidden)
                         .padding(10)
                         .frame(minHeight: 100)
+                        .focused($noteFocused)
                 }
             }
         }

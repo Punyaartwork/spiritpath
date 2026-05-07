@@ -52,6 +52,24 @@ final class HealthService {
         mindfulWriteStatus == .notDetermined
     }
 
+    /// View-friendly status for PracticeView micro-copy · hides HK enum.
+    enum PermissionState {
+        case undetermined  // first session · prompt will fire on Begin
+        case granted       // user said yes · steps + mindful flowing
+        case denied        // user said no · sessions still work · 0 steps
+        case unavailable   // simulator / iPad / device with no HK
+    }
+
+    var permissionState: PermissionState {
+        guard isAvailable else { return .unavailable }
+        switch store.authorizationStatus(for: mindfulType) {
+        case .notDetermined:    return .undetermined
+        case .sharingAuthorized: return .granted
+        case .sharingDenied:    return .denied
+        @unknown default:       return .undetermined
+        }
+    }
+
     /// Idempotent · no-op if already determined.
     func requestAuthorization() async throws {
         guard isAvailable else { throw HealthServiceError.notAvailable }
