@@ -108,6 +108,16 @@ enum AnalyticsEvent {
         source: String              // "cache" · "server" · "default"
     )
 
+    /// M25 · Phase 2.7a · fires when journey_progress.current_stage advances (silent, server-validated).
+    /// Fired exactly once per advancement · idempotent guard inside JourneyProgressService.
+    case stageAdvanced(
+        fromStage: Int,             // 1–4
+        toStage: Int,               // 2–5
+        triggerRule: String,        // "composite_v1"
+        sessionsInStage: Int,       // ≥ threshold
+        daysInStage: Int            // ≥ threshold
+    )
+
     var name: String {
         switch self {
         case .onboardingCompleted:    return "onboarding_completed"
@@ -119,6 +129,7 @@ enum AnalyticsEvent {
         case .lineageChanged:         return "lineage_changed"
         case .stillnessOpened:        return "stillness_opened"
         case .featureFlagEvaluated:   return "feature_flag_evaluated"
+        case .stageAdvanced:          return "stage_advanced"
         }
     }
 
@@ -200,6 +211,14 @@ enum AnalyticsEvent {
                 "flag_value": value,
                 "default_used": defaultUsed,
                 "source": source
+            ]
+        case .stageAdvanced(let fromStage, let toStage, let triggerRule, let sessionsInStage, let daysInStage):
+            return [
+                "from_stage": fromStage,
+                "to_stage": toStage,
+                "trigger_rule": triggerRule,
+                "sessions_in_stage": sessionsInStage,
+                "days_in_stage": daysInStage
             ]
         }
     }
