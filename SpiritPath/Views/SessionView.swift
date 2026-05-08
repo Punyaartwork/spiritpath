@@ -347,6 +347,23 @@ struct SessionView: View {
             ground: ctx.ground,
             paceMode: ctx.paceMode
         ))
+
+        // Phase 1.5-followup · audit-gap #11 · INSERT row to sessions (best-effort,
+        // fire-and-forget · M8 invariant: sessions.id == Mixpanel session_uuid).
+        let started = ctx.startedAt ?? Date()
+        Task {
+            await SessionRepository.shared.insertSession(
+                id: ctx.uuid,
+                sessionType: ctx.sessionType,
+                lineageId: ctx.lineageId,
+                stageIndex: ctx.stageIndex,
+                targetSec: ctx.targetSec,
+                place: ctx.place,
+                paceMode: ctx.paceMode,
+                ground: ctx.ground,
+                startedAt: started
+            )
+        }
     }
 
     private func endSession(natural: Bool = false) {
@@ -380,6 +397,19 @@ struct SessionView: View {
                 sessionUuid: ctx.uuid,
                 lineageId: ctx.lineageId,
                 stageIndex: ctx.stageIndex
+            )
+
+            // Phase 1.5-followup · audit-gap #11 · UPDATE sessions row BEFORE stage-advance
+            // check fires below · countCompletedSessionsSince() must see this row.
+            // Awaiting here does not block the UI: we are already inside a background Task
+            // launched at end-of-session · onEnd() navigation runs after this completes.
+            await SessionRepository.shared.endSession(
+                id: ctx.uuid,
+                durationActualSec: elapsed,
+                completed: completed,
+                mindfulSteps: steps,
+                totalSteps: steps,
+                endedAt: endedAt
             )
 
             await MainActor.run {
