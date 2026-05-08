@@ -402,6 +402,17 @@ struct SessionView: View {
                     endedReason: reason
                 ))
 
+                // Phase 2.7a · cohort-driven stage advancement check.
+                // Walking + completed only · server-side RLS revalidates · silent advance (no celebration UI).
+                // JourneyView will reflect the new stage on next render.
+                if ctx.sessionType == "walking", completed {
+                    Task {
+                        if let newStage = try? await JourneyProgressService.shared.checkAndAdvanceStage() {
+                            print("[journey] advanced to stage \(newStage)")
+                        }
+                    }
+                }
+
                 onEnd()
             }
         }
