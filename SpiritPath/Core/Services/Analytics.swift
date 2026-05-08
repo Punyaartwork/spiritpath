@@ -118,6 +118,14 @@ enum AnalyticsEvent {
         daysInStage: Int            // ≥ threshold
     )
 
+    /// M28 · Phase 2.7c · Settings Privacy toggle · cross-platform contract with Android.
+    /// Caller MUST sequence vs Mixpanel SDK opt-state correctly:
+    ///   - Opting OUT → fire event BEFORE Analytics.setOptOut(true) so it isn't suppressed
+    ///   - Opting IN  → fire event AFTER  Analytics.setOptOut(false) so the local consent
+    ///                  gate has been lifted before track() runs
+    /// SettingsRepository.updateTrackingOptOut handles this ordering.
+    case trackingOptOutChanged(optedOut: Bool)
+
     var name: String {
         switch self {
         case .onboardingCompleted:    return "onboarding_completed"
@@ -130,6 +138,7 @@ enum AnalyticsEvent {
         case .stillnessOpened:        return "stillness_opened"
         case .featureFlagEvaluated:   return "feature_flag_evaluated"
         case .stageAdvanced:          return "stage_advanced"
+        case .trackingOptOutChanged:  return "tracking_opt_out_changed"
         }
     }
 
@@ -219,6 +228,10 @@ enum AnalyticsEvent {
                 "trigger_rule": triggerRule,
                 "sessions_in_stage": sessionsInStage,
                 "days_in_stage": daysInStage
+            ]
+        case .trackingOptOutChanged(let optedOut):
+            return [
+                "opted_out": optedOut
             ]
         }
     }

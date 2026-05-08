@@ -21,11 +21,12 @@ enum Screen: String, CaseIterable {
     case reflection = "reflection"
     case nightlog   = "nightlog"   // Phase 2.4b · before-sleep reflection
     case compare    = "compare"    // Phase 2.6 · cross-lineage view
+    case settings   = "settings"   // Phase 2.7c · gear icon destination
 
     var showsTabBar: Bool {
         switch self {
-        case .home, .practice, .journey, .stillness:    return true
-        case .session, .reflection, .nightlog, .compare: return false
+        case .home, .practice, .journey, .stillness:               return true
+        case .session, .reflection, .nightlog, .compare, .settings: return false
         }
     }
 }
