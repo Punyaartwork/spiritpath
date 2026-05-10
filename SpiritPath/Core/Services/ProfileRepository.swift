@@ -34,4 +34,13 @@ final class ProfileRepository {
             .eq("id", value: userId)
             .execute()
     }
+
+    /// Phase 2.7c stub · contract surface for callers that mutate the profile row
+    /// (e.g. SettingsRepository.updateTrackingOptOut) and want any cached state to
+    /// re-pull. ProfileRepository is currently stateless · so this is a no-op
+    /// placeholder kept stable so caching can land later without churning call sites.
+    func refresh() async {
+        // No-op · cache wiring lands Phase 2.7c+ when ProfileRepository becomes
+        // the source-of-truth for profile reads (currently views read directly).
+    }
 }

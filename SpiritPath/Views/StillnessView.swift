@@ -98,6 +98,9 @@ struct StillnessView: View {
     @State private var subScreen: StillnessSubScreen?
     @State private var orbScale: CGFloat = 1.0
 
+    /// Phase 2.7c · gear icon callback · invoked from header.
+    var onOpenSettings: () -> Void = {}
+
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
@@ -139,9 +142,15 @@ struct StillnessView: View {
                 .font(.custom("DMSerifDisplay-Italic", size: 18))
                 .foregroundStyle(AppTheme.Ink.primary)
             Spacer()
-            Image(systemName: "gearshape")
-                .font(.system(size: 18))
-                .foregroundStyle(AppTheme.Ink.primary)
+            Button {
+                onOpenSettings()
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 18))
+                    .foregroundStyle(AppTheme.Ink.primary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Settings")
         }
         .padding(.horizontal, 22)
         .padding(.top, 14)

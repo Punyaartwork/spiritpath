@@ -26,6 +26,10 @@ struct RootTabView: View {
     // MARK: · shared Session → Reflection state
     @State private var sessionContext: SessionContext?
 
+    // MARK: · Phase 2.7c · settings return-to screen tracking
+    @State private var previousScreen: Screen?
+    @State private var settingsViewModel = SettingsViewModel()
+
     var body: some View {
         ZStack(alignment: .bottom) {
             Group {
@@ -35,9 +39,12 @@ struct RootTabView: View {
                 case .practice:
                     PracticeView(onBegin: startSession)
                 case .journey:
-                    JourneyView(onCompareLineages: openCompare)
+                    JourneyView(
+                        onCompareLineages: openCompare,
+                        onOpenSettings: openSettings
+                    )
                 case .stillness:
-                    StillnessView()
+                    StillnessView(onOpenSettings: openSettings)
                 case .compare:
                     CompareView(onBack: closeCompare)
                 case .session:
@@ -52,6 +59,18 @@ struct RootTabView: View {
                     )
                 case .nightlog:
                     NightLogView(onDismiss: navigateToStillness)
+                case .settings:
+                    NavigationStack {
+                        SettingsView(viewModel: settingsViewModel)
+                            .toolbar {
+                                ToolbarItem(placement: .topBarLeading) {
+                                    Button("Done") {
+                                        closeSettings()
+                                    }
+                                    .foregroundStyle(AppTheme.Accent.primary)
+                                }
+                            }
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -70,6 +89,23 @@ struct RootTabView: View {
         case .session:              return .gradientDepth
         default:                    return .day
         }
+    }
+
+    // MARK: · settings entry / exit · Phase 2.7c
+
+    private func openSettings() {
+        previousScreen = screen
+        withAnimation(.easeInOut(duration: 0.5)) {
+            screen = .settings
+        }
+    }
+
+    private func closeSettings() {
+        let target = previousScreen ?? .home
+        withAnimation(.easeInOut(duration: 0.5)) {
+            screen = target
+        }
+        previousScreen = nil
     }
 
     // MARK: · session lifecycle

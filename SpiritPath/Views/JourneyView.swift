@@ -107,8 +107,16 @@ struct JourneyView: View {
     /// Phase 2.6 · callback to navigate to CompareView · invoked from compareCard tap.
     var onCompareLineages: () -> Void = {}
 
-    init(initialLineageId: String? = nil, onCompareLineages: @escaping () -> Void = {}) {
+    /// Phase 2.7c · gear icon callback · invoked from header.
+    var onOpenSettings: () -> Void = {}
+
+    init(
+        initialLineageId: String? = nil,
+        onCompareLineages: @escaping () -> Void = {},
+        onOpenSettings: @escaping () -> Void = {}
+    ) {
         self.onCompareLineages = onCompareLineages
+        self.onOpenSettings = onOpenSettings
         let initial = initialLineageId
             ?? UserDefaults.standard.string(forKey: "selected_lineage_id")
             ?? "sodh"
@@ -169,9 +177,15 @@ struct JourneyView: View {
                     .foregroundStyle(AppTheme.Accent.primary)
             }
             Spacer()
-            Image(systemName: "gearshape")
-                .font(.system(size: 18))
-                .foregroundStyle(AppTheme.Accent.primary)
+            Button {
+                onOpenSettings()
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 18))
+                    .foregroundStyle(AppTheme.Accent.primary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Settings")
         }
         .padding(.horizontal, 22)
         .padding(.top, 14)
