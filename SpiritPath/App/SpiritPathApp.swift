@@ -208,6 +208,7 @@ private struct OnboardingView: View {
     @State private var outgoingGroup2Screen: Int?
     @State private var group2SlideDirection = 1
     @State private var group2SlideProgress = 1.0
+    @State private var stepEnteredAt: Date = Date()  // M27 · Phase 2.7d-prep · reset on entry to each R30 step screen via go(to:)
     @StateObject private var locationRequester = LocationPermissionRequester()
 
     var body: some View {
@@ -269,6 +270,7 @@ private struct OnboardingView: View {
             group2Screen(10)
         case 11:
             SpiritMatchScreen(match: state.spiritMatch) {
+                fireStepAdvanced(stepIndex: 6, stepName: "result_reveal")
                 go(to: 12)
             }
         case 12:
@@ -317,10 +319,12 @@ private struct OnboardingView: View {
         switch page {
         case 2:
             GetStartedScreen {
+                fireStepAdvanced(stepIndex: 0, stepName: "welcome")
                 go(to: 3)
             }
         case 3:
             ValuePropsScreen(onBack: back) {
+                fireStepAdvanced(stepIndex: 1, stepName: "lineage_match")
                 go(to: 4)
             }
         case 4:
@@ -357,9 +361,13 @@ private struct OnboardingView: View {
                 ],
                 selected: state.hopedOutcome,
                 onBack: back,
-                onSkip: { go(to: 6) },
+                onSkip: {
+                    fireStepAdvanced(stepIndex: 5, stepName: "quiz_intent")
+                    go(to: 6)
+                },
                 onSelect: { answer in
                     state.hopedOutcome = answer
+                    fireStepAdvanced(stepIndex: 5, stepName: "quiz_intent")
                     autoAdvance(to: 6)
                 }
             )
@@ -383,6 +391,7 @@ private struct OnboardingView: View {
                 onSkip: nil,
                 onSelect: { answer in
                     state.meditationExp = answer
+                    fireStepAdvanced(stepIndex: 2, stepName: "quiz_experience")
                     autoAdvance(to: 8)
                 }
             )
@@ -417,7 +426,10 @@ private struct OnboardingView: View {
                 selected: $state.focusPlaces,
                 buttonTitle: "Continue",
                 onBack: back,
-                onContinue: { go(to: 10) }
+                onContinue: {
+                    fireStepAdvanced(stepIndex: 4, stepName: "quiz_focus")
+                    go(to: 10)
+                }
             )
         case 10:
             ChipQuestionScreen(
@@ -430,7 +442,10 @@ private struct OnboardingView: View {
                 selected: $state.teachingTypes,
                 buttonTitle: "Show My Spirit Match",
                 onBack: back,
-                onContinue: { go(to: 11) }
+                onContinue: {
+                    fireStepAdvanced(stepIndex: 3, stepName: "quiz_teaching")
+                    go(to: 11)
+                }
             )
         default:
             EmptyView()
@@ -458,6 +473,13 @@ private struct OnboardingView: View {
             withAnimation(.none) {
                 screen = nextScreen
             }
+        }
+
+        // M27 · Phase 2.7d-prep · reset on entry to each R30 funnel step screen
+        // so time_on_step_sec measures only that step (excludes interstitial 4/6/8).
+        // Screens 2/3/5/7/9/10/11 are R30 step screens · others are interstitial or post-funnel.
+        if [2, 3, 5, 7, 9, 10, 11].contains(nextScreen) {
+            stepEnteredAt = Date()
         }
     }
 
@@ -493,6 +515,20 @@ private struct OnboardingView: View {
     private func currentLocationGranted() -> Bool {
         let status = CLLocationManager().authorizationStatus
         return status == .authorizedAlways || status == .authorizedWhenInUse
+    }
+
+    /// M27 · Phase 2.7d-prep · per-step funnel event · variantId hardcoded "default" until
+    /// Phase 2.7d-impl wires feature_flag onboarding_variant lookup. step_index uses canonical
+    /// R30 position · NOT iOS UI order (e.g. quiz_focus=4 fires before quiz_teaching=3 in iOS flow).
+    private func fireStepAdvanced(stepIndex: Int, stepName: String) {
+        let timeOnStepSec = max(0, Int(Date().timeIntervalSince(stepEnteredAt)))
+        Analytics.track(.onboardingStepAdvanced(
+            stepIndex: stepIndex,
+            stepName: stepName,
+            timeOnStepSec: timeOnStepSec,
+            variantId: "default"
+        ))
+        stepEnteredAt = Date()
     }
 
     private func fireOnboardingCompleted() {
