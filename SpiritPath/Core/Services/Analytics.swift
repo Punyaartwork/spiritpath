@@ -118,6 +118,18 @@ enum AnalyticsEvent {
         daysInStage: Int            // ≥ threshold
     )
 
+    /// M27 · Phase 2.7d-prep · fires per onboarding step Next button tap · funnel drop-off analysis.
+    /// step_index: canonical R30 position (0..6) · NOT iOS screen number · NOT firing order.
+    /// step_name: one of welcome / lineage_match / quiz_experience / quiz_teaching / quiz_focus / quiz_intent / result_reveal.
+    /// time_on_step_sec: seconds spent on that R30 step screen before advancing (interstitial time excluded by go(to:) reset).
+    /// variant_id: "default" Phase 2.7d-prep · replaced with feature_flag onboarding_variant value Phase 2.7d-impl.
+    case onboardingStepAdvanced(
+        stepIndex: Int,
+        stepName: String,
+        timeOnStepSec: Int,
+        variantId: String
+    )
+
     /// M28 · Phase 2.7c · Settings Privacy toggle · cross-platform contract with Android.
     /// Caller MUST sequence vs Mixpanel SDK opt-state correctly:
     ///   - Opting OUT → fire event BEFORE Analytics.setOptOut(true) so it isn't suppressed
@@ -138,6 +150,7 @@ enum AnalyticsEvent {
         case .stillnessOpened:        return "stillness_opened"
         case .featureFlagEvaluated:   return "feature_flag_evaluated"
         case .stageAdvanced:          return "stage_advanced"
+        case .onboardingStepAdvanced: return "onboarding_step_advanced"
         case .trackingOptOutChanged:  return "tracking_opt_out_changed"
         }
     }
@@ -228,6 +241,13 @@ enum AnalyticsEvent {
                 "trigger_rule": triggerRule,
                 "sessions_in_stage": sessionsInStage,
                 "days_in_stage": daysInStage
+            ]
+        case .onboardingStepAdvanced(let stepIndex, let stepName, let timeOnStepSec, let variantId):
+            return [
+                "step_index": stepIndex,
+                "step_name": stepName,
+                "time_on_step_sec": timeOnStepSec,
+                "variant_id": variantId
             ]
         case .trackingOptOutChanged(let optedOut):
             return [
