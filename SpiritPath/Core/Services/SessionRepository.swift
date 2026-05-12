@@ -191,4 +191,84 @@ final class SessionRepository {
             return 0
         }
     }
+
+    // MARK: · Phase 2.7b · reflections lifecycle (M26 fire-site companion)
+
+    /// List user reflections · ordered desc by created_at · joined sessions row carries
+    /// lineage_id + stage_index_at_time for filtering/display (audit-gap #12 verified ·
+    /// those columns DO NOT exist on reflections · only sessions).
+    ///
+    /// Schema notes (0002_practice.sql:66 · audit-gap #12 verified):
+    ///   - column `note_text` (NOT `note` per brief example · brief deviates · adapted)
+    ///   - no `note_length_chars` column · computed client-side on ReflectionRow.noteLengthChars
+    ///   - lineage_id + stage_index_at_time live on joined public.sessions · embed via select
+    ///
+    /// Filtering strategy:
+    ///   - anchor_phrase: server-side ilike (case-insensitive substring match)
+    ///   - lineage/stage: client-side post-fetch (PostgREST embed-filter via .filter("sessions.x",...)
+    ///     would work but loses .eq() builder type safety · client-side filter acceptable at 50-row cap)
+    ///
+    /// Throws on network/auth/decode failure · caller (ReflectionHistoryViewModel) renders
+    /// error state with "Couldn't load history. Pull to retry." copy.
+    /// Deviates from countCompletedSessionsSince defensive-default pattern because this read
+    /// is foreground/user-driven · error visibility matters (vs background read which silently 0s).
+    func listReflections(
+        userId: String,
+        lineageId: String? = nil,
+        stageIndex: Int? = nil,
+        searchAnchor: String? = nil,
+        limit: Int = 50
+    ) async throws -> [ReflectionRow] {
+        var query = supabase
+            .from("reflections")
+            .select("id, user_id, session_id, note_text, anchor_phrase, created_at, updated_at, sessions(lineage_id, stage_index_at_time)")
+            .eq("user_id", value: userId)
+            .is("deleted_at", value: nil)
+
+        if let trimmed = searchAnchor?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty {
+            query = query.ilike("anchor_phrase", pattern: "%\(trimmed)%")
+        }
+
+        let rows: [ReflectionRow] = try await query
+            .order("created_at", ascending: false)
+            .limit(limit)
+            .execute()
+            .value
+
+        return rows.filter { row in
+            if let lineageId, row.lineageId != lineageId { return false }
+            if let stageIndex, row.stageIndex != stageIndex { return false }
+            return true
+        }
+    }
+
+    /// UPDATE reflection note_text + anchor_phrase · idempotent UPDATE-by-id.
+    /// Throws on failure so caller (ReflectionEditViewModel.save) can gate M26 fire on success.
+    /// updated_at refreshed via Self.isoFormatter (microsecond precision matches other writes).
+    ///
+    /// Privacy: payload travels over TLS to Supabase · M11 lock unchanged (text never goes to Mixpanel).
+    func updateReflection(
+        id: String,
+        noteText: String,
+        anchorPhrase: String?
+    ) async throws {
+        struct ReflectionUpdate: Encodable {
+            let note_text: String
+            let anchor_phrase: String?
+            let updated_at: String
+        }
+
+        let trimmedAnchor = anchorPhrase?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let payload = ReflectionUpdate(
+            note_text: noteText,
+            anchor_phrase: (trimmedAnchor?.isEmpty ?? true) ? nil : trimmedAnchor,
+            updated_at: Self.isoFormatter.string(from: Date())
+        )
+
+        try await supabase
+            .from("reflections")
+            .update(payload)
+            .eq("id", value: id)
+            .execute()
+    }
 }
