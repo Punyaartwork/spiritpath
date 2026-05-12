@@ -118,6 +118,18 @@ enum AnalyticsEvent {
         daysInStage: Int            // ≥ threshold
     )
 
+    /// M26 · Phase 2.7b · fires when user edits a previously submitted reflection.
+    /// Fired AFTER UPDATE succeeds (best-effort · network failure = no fire · no M26).
+    /// Privacy lock (M11 baseline preserved): char COUNTS only · NEVER note text.
+    /// Funnel cohort: reflection_submitted (M1) → reflection_edited (M26) within 7 days
+    /// = high-engagement re-engagement signal · indicates user finds reflection value.
+    case reflectionEdited(
+        noteLengthCharsBefore: Int,
+        noteLengthCharsAfter: Int,
+        timeSinceSubmitSec: Int,
+        anchorPhraseChanged: Bool
+    )
+
     /// M27 · Phase 2.7d-prep · fires per onboarding step Next button tap · funnel drop-off analysis.
     /// step_index: canonical R30 position (0..6) · NOT iOS screen number · NOT firing order.
     /// step_name: one of welcome / lineage_match / quiz_experience / quiz_teaching / quiz_focus / quiz_intent / result_reveal.
@@ -150,6 +162,7 @@ enum AnalyticsEvent {
         case .stillnessOpened:        return "stillness_opened"
         case .featureFlagEvaluated:   return "feature_flag_evaluated"
         case .stageAdvanced:          return "stage_advanced"
+        case .reflectionEdited:       return "reflection_edited"
         case .onboardingStepAdvanced: return "onboarding_step_advanced"
         case .trackingOptOutChanged:  return "tracking_opt_out_changed"
         }
@@ -241,6 +254,13 @@ enum AnalyticsEvent {
                 "trigger_rule": triggerRule,
                 "sessions_in_stage": sessionsInStage,
                 "days_in_stage": daysInStage
+            ]
+        case .reflectionEdited(let before, let after, let timeSinceSubmit, let anchorChanged):
+            return [
+                "note_length_chars_before": before,
+                "note_length_chars_after":  after,
+                "time_since_submit_sec":    timeSinceSubmit,
+                "anchor_phrase_changed":    anchorChanged
             ]
         case .onboardingStepAdvanced(let stepIndex, let stepName, let timeOnStepSec, let variantId):
             return [

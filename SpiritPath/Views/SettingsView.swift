@@ -298,7 +298,7 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: · Section A · Profile (read-only)
+    // MARK: · Section A · Profile (read-only) + Past reflections entry (Phase 2.7b)
 
     private var profileSection: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -333,6 +333,25 @@ struct SettingsView: View {
                             .font(.custom("DMSerifDisplay-Italic", size: 15))
                             .foregroundStyle(AppTheme.Ink.primary)
                     }
+
+                    // Phase 2.7b · Past reflections entry · pushed onto Settings NavigationStack
+                    // (RootTabView.swift:63 wraps SettingsView in NavigationStack so this
+                    //  NavigationLink resolves naturally · no Screen enum extension needed).
+                    Divider().background(AppTheme.Ink.ghost)
+
+                    NavigationLink(destination: ReflectionHistoryView()) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("Past reflections")
+                                .font(.custom("Manrope", size: 14))
+                                .fontWeight(.medium)
+                                .foregroundStyle(AppTheme.Ink.primary)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(AppTheme.Ink.soft)
+                        }
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
